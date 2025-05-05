@@ -20,6 +20,7 @@ func (s *UserService) FindOrCreateByEmail(name, email, provider string) (*models
 	err := s.DB.Where("email = ?", email).First(&user).Error
 	if err == gorm.ErrRecordNotFound {
 		user = models.User{Name: name, Email: email, Provider: provider}
+		// Do NOT set SessionID here!
 		if err := s.DB.Create(&user).Error; err != nil {
 			return nil, err
 		}
@@ -48,4 +49,16 @@ func (s *UserService) GetUserBySessionID(sessionID string) (*models.User, error)
 // SaveSessionID saves the session ID for a user
 func (s *UserService) SaveSessionID(userID uint, sessionID string) error {
 	return s.DB.Model(&models.User{}).Where("id = ?", userID).Update("session_id", sessionID).Error
+}
+
+// DeleteSessionID removes the session ID from the user with the given sessionID
+func (s *UserService) DeleteSessionID(sessionID string) error {
+    return s.DB.Model(&models.User{}).Where("session_id = ?", sessionID).Update("session_id", "").Error
+}
+
+// GetAllUsers returns all users from the database
+func (s *UserService) GetAllUsers() ([]models.User, error) {
+	var users []models.User
+	err := s.DB.Find(&users).Error
+	return users, err
 }

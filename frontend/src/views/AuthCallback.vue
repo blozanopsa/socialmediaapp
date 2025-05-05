@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import Loader from '@/components/Loader.vue'
+import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
@@ -14,13 +15,11 @@ onMounted(async () => {
     await new Promise((resolve) => setTimeout(resolve, 500))
 
     // Fetch user data from the backend
-    const response = await fetch('http://localhost:8080/api/user', {
-      credentials: 'include',
+    const response = await axios.get('http://localhost:8080/api/user', {
+      withCredentials: true,
     })
 
-    if (!response.ok) throw new Error('Failed to fetch user data')
-
-    const userData = await response.json()
+    const userData = response.data
 
     // Store user data in localStorage (now includes id)
     localStorage.setItem('user', JSON.stringify(userData))
@@ -54,5 +53,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Loader />
+  <div class="flex flex-col items-center justify-center min-h-screen w-full">
+    <Loader />
+  </div>
 </template>

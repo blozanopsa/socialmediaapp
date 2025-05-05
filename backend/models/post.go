@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Post struct {
 	ID          uint `gorm:"primaryKey"`
 	UserID      uint
@@ -8,13 +10,17 @@ type Post struct {
 	ImageURL    string
 	Comments    []Comment
 	Likes       []Like
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type Comment struct {
-	ID      uint `gorm:"primaryKey"`
-	PostID  uint
-	UserID  uint
-	Content string
+	ID        uint `gorm:"primaryKey"`
+	PostID    uint
+	UserID    uint
+	Content   string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Like struct {

@@ -1,6 +1,8 @@
 // src/utils/auth.guard.js
 // Simple auth guard for Vue Router
 
+import axios from 'axios'
+
 export async function requireAuth(to, from, next) {
   console.log('Auth Guard: Checking route:', to.path)
   const publicPages = ['/', '/login', '/auth/microsoft/callback']
@@ -8,18 +10,19 @@ export async function requireAuth(to, from, next) {
 
   // Only validate the session if the route requires authentication
   if (authRequired) {
-    const response = await fetch('http://localhost:8080/api/user', {
-      credentials: 'include',
-    })
-    if (response.ok) {
-      console.log('Auth Guard: Session validated by backend')
-      // Allow navigation
-      console.log('Auth Guard: Navigation allowed')
-      next()
-      return
-    } else {
+    try {
+      const response = await axios.get('http://localhost:8080/api/user', {
+        withCredentials: true,
+      })
+      if (response.status === 200) {
+        console.log('Auth Guard: Session validated by backend')
+        // Allow navigation
+        console.log('Auth Guard: Navigation allowed')
+        next()
+        return
+      }
+    } catch (error) {
       console.warn('Auth Guard: Session invalid, redirecting to home')
-      // If route requires auth and no session ID, redirect to home
       if (authRequired) {
         console.warn('Auth Guard: No session ID, redirecting to home')
         next({ name: 'home', replace: true })

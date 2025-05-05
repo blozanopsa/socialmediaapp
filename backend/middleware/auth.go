@@ -6,14 +6,17 @@ import (
 )
 
 // AuthMiddleware checks for a Bearer token (Microsoft OAuth) in the Authorization header
+// or a valid sessionID cookie
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		sessionCookie, err := r.Cookie("sessionID")
+		if (authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ")) && (err != nil || sessionCookie.Value == "") {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		// TODO: Validate the Microsoft OAuth token here
+		// TODO: Validate the Microsoft OAuth token here if using Bearer
+		// TODO: Validate the sessionID cookie here if using session
 		next.ServeHTTP(w, r)
 	})
 }

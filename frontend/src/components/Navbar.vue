@@ -14,15 +14,30 @@
       <div>{{ user?.Name || user?.name || 'Guest' }}</div>
       <button
         @click="logout"
-        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition duration-200"
+        class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-700 text-white rounded-full shadow-md hover:from-red-600 hover:to-red-800 hover:scale-105 transition-all duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-red-400"
       >
-        Logout
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1"
+          />
+        </svg>
+        <span>Logout</span>
       </button>
     </div>
   </nav>
 </template>
 
 <script setup>
+import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
@@ -36,10 +51,13 @@ async function logout() {
   userStore.clearUser()
   localStorage.removeItem('userName')
   // Call the new backend logout endpoint to clear the sessionID cookie
-  await fetch('http://localhost:8080/auth/session/logout', {
-    method: 'POST',
-    credentials: 'include',
-  })
+  await axios.post(
+    'http://localhost:8080/auth/session/logout',
+    {},
+    {
+      withCredentials: true,
+    },
+  )
   console.log('NavBar: Called backend to clear sessionID cookie and session')
   // Redirect to homepage
   router.replace({ name: 'home' })

@@ -57,26 +57,6 @@ func main() {
 	r.HandleFunc("/public-chat-messages", chatController.GetMessages).Methods("GET")
 	r.HandleFunc("/public-chat-messages", chatController.PostMessage).Methods("POST")
 
-	// Wrap the router with the CORS middleware
-	r.Use(backendMiddleware.CORSMiddleware)
-
-	// Public user endpoints (OAuth)
-	r.HandleFunc("/auth/login", userController.MicrosoftLogin).Methods("GET")
-	r.HandleFunc("/auth/microsoft/callback", userController.MicrosoftCallback).Methods("GET")
-	r.HandleFunc("/auth/logout", userController.MicrosoftLogout).Methods("POST")
-	r.HandleFunc("/auth/facebook/login", userController.FacebookLogin).Methods("GET")
-	r.HandleFunc("/auth/facebook/callback", userController.FacebookCallback).Methods("GET")
-
-	// Post endpoints
-	api := r.PathPrefix("/api").Subrouter()
-	api.Use(backendMiddleware.AuthMiddleware)
-	api.HandleFunc("/posts", postController.CreatePost).Methods("POST")
-	api.HandleFunc("/posts", postController.GetAllPosts).Methods("GET")
-	api.HandleFunc("/posts/{id}", postController.GetPost).Methods("GET")
-	api.HandleFunc("/posts/{id}", postController.UpdatePost).Methods("PUT")
-	api.HandleFunc("/posts/{id}", postController.DeletePost).Methods("DELETE")
-	api.HandleFunc("/posts/filter", postController.FilterPostsByUser).Methods("GET")
-
 	// Health check
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -84,5 +64,6 @@ func main() {
 	})
 
 	log.Println("Starting server on :8080...")
-	http.ListenAndServe(":8080", r)
+	// Wrap the router with CORS middleware globally
+	http.ListenAndServe(":8080", backendMiddleware.CORSMiddleware(r))
 }

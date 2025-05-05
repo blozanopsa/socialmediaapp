@@ -31,7 +31,7 @@ func (cc *ChatController) PostMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid message", http.StatusBadRequest)
 		return
 	}
-	if msg.User == "" || msg.Text == "" {
+	if msg.User == 0 || msg.Text == "" {
 		http.Error(w, "Missing user or text", http.StatusBadRequest)
 		return
 	}

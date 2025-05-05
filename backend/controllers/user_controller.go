@@ -7,6 +7,12 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
+	"time"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 
 	"backend/configs"
 	"backend/services"
@@ -162,10 +168,14 @@ func (uc *UserController) MicrosoftLogout(w http.ResponseWriter, r *http.Request
 
 	// Clear the sessionID cookie on logout
 	http.SetCookie(w, &http.Cookie{
-		Name:   "sessionID",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1, // Expire immediately
+		Name:     "sessionID",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 }
 
@@ -283,15 +293,69 @@ func (uc *UserController) GetUserData(w http.ResponseWriter, r *http.Request) {
 
 // Add a new endpoint to handle logout and clear the sessionID cookie
 func (uc *UserController) Logout(w http.ResponseWriter, r *http.Request) {
-	// Clear the sessionID cookie
+	// Remove session from backend if you store sessions
+	cookie, err := r.Cookie("sessionID")
+	if err == nil {
+		uc.UserService.DeleteSessionID(cookie.Value)
+	}
+
+	// Clear the sessionID cookie (attributes must match how you set it)
 	http.SetCookie(w, &http.Cookie{
-		Name:   "sessionID",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1, // Expire immediately
+		Name:     "sessionID",
+		Value:    "",
+		Path:     "/", // must match
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 
-	// Respond with a success message
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Logged out successfully"))
+}
+
+// GetUserNames returns a list of all users' IDs and names
+func (uc *UserController) GetUserNames(w http.ResponseWriter, r *http.Request) {
+	users, err := uc.UserService.GetAllUsers()
+	if err != nil {
+		http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
+		return
+	}
+	// Only return ID and Name
+	type userName struct {
+		ID   uint   `json:"id"`
+		Name string `json:"name"`
+	}
+	var result []userName
+	for _, u := range users {
+		result = append(result, userName{ID: u.ID, Name: u.Name})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+// ImageKitAuth provides authentication parameters for ImageKit frontend upload
+func (uc *UserController) ImageKitAuth(w http.ResponseWriter, r *http.Request) {
+	privateKey := os.Getenv("IMAGEKIT_PRIVATE_KEY") // Set this in your .env or system env
+	if privateKey == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("IMAGEKIT_PRIVATE_KEY not set"))
+		return
+	}
+	token := strconv.FormatInt(time.Now().Unix(), 10)
+	expire := strconv.FormatInt(time.Now().Add(5*time.Minute).Unix(), 10)
+	raw := token + privateKey + expire
+
+	h := hmac.New(sha1.New, []byte(privateKey))
+	h.Write([]byte(raw))
+	signature := hex.EncodeToString(h.Sum(nil))
+
+	resp := map[string]string{
+		"token":     token,
+		"expire":    expire,
+		"signature": signature,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
