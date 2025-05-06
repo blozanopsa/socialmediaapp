@@ -114,7 +114,7 @@
               <span class="text-xs text-gray-400 ml-2">{{
                 new Date(comment.CreatedAt).toLocaleString()
               }}</span>
-              <div v-if="editingCommentId === comment.ID">
+              <div v-if="editingCommentId === comment.ID && userStore.user?.id === comment.UserID">
                 <textarea
                   :value="localEditCommentContent"
                   @input="onEditCommentInput"
@@ -138,7 +138,7 @@
               </div>
               <div v-else>{{ comment.Content }}</div>
             </div>
-            <div v-if="canEditOrDeleteComment(comment)" class="relative ml-2">
+            <div v-if="userStore.user?.id === comment.UserID" class="relative ml-2">
               <button
                 @click="(e) => toggleCommentMenu(comment.ID, e)"
                 class="p-1 rounded hover:bg-gray-200"
@@ -282,6 +282,38 @@ watch(
     localEditCommentContent.value = val || ''
   },
   { immediate: true },
+)
+
+const userNames = ref({ ...props.userNames })
+
+watch(
+  () => props.userNames,
+  (val) => {
+    userNames.value = { ...val }
+  },
+)
+
+watch(
+  () => props.comments,
+  async (comments) => {
+    if (!comments || !Array.isArray(comments)) return
+    const missingIds = comments
+      .map((c) => c.UserID)
+      .filter((id) => !(props.userNames && props.userNames[id]))
+    // Remove duplicates
+    const uniqueMissingIds = [...new Set(missingIds)]
+    for (const id of uniqueMissingIds) {
+      try {
+        const res = await axios.get(`http://localhost:8080/api/users/${id}/name`)
+        // Emit an event to parent to update userNames (if parent owns userNames)
+        // Or, if userNames is local, update it here
+        props.userNames[id] = res.data.name
+      } catch (e) {
+        // fallback: leave as 'User {id}'
+      }
+    }
+  },
+  { immediate: true, deep: true },
 )
 
 function onEditCommentInput(e) {

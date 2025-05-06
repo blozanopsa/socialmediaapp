@@ -223,13 +223,32 @@ func (c *PostController) AddComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing userId or content", http.StatusBadRequest)
 		return
 	}
+
+	// Fetch the user's name
+	user, err := c.Service.GetUserByID(body.UserID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	// Add the comment
 	comment, err := c.Service.AddComment(uint(id), body.UserID, body.Content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Include the user's name in the response
+	response := struct {
+		Comment  models.Comment `json:"comment"`
+		UserName string         `json:"userName"`
+	}{
+		Comment:  *comment,
+		UserName: user.Name,
+	}
+
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(comment)
+	json.NewEncoder(w).Encode(response)
 }
 
 // EditComment handles PUT /api/posts/{postId}/comments/{commentId}

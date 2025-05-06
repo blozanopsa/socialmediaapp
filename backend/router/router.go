@@ -43,8 +43,8 @@ func NewRouter(postController *backendControllers.PostController, userController
 	// Exclude `/api/user` from AuthMiddleware
 	r.HandleFunc("/api/user", userController.GetUserData).Methods("GET")
 
-	// image kit endpoints
-	r.HandleFunc("/imagekit-auth", userController.ImageKitAuth).Methods("GET")
+	// User name by ID endpoint (public, no auth)
+	r.HandleFunc("/api/users/{id}/name", userController.GetUserNameByID).Methods("GET")
 
 	// Health check
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

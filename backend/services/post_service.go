@@ -67,13 +67,25 @@ func (s *PostService) GetPostsLikedByUser(userID uint) ([]models.Post, error) {
 
 // AddComment adds a comment to a post
 func (s *PostService) AddComment(postID, userID uint, content string) (*models.Comment, error) {
+	// Fetch the user's name
+	var user models.User
+	if err := s.DB.First(&user, userID).Error; err != nil {
+		return nil, err
+	}
+
+	// Create the comment
 	comment := models.Comment{
 		PostID:  postID,
 		UserID:  userID,
 		Content: content,
 	}
-	err := s.DB.Create(&comment).Error
-	return &comment, err
+	if err := s.DB.Create(&comment).Error; err != nil {
+		return nil, err
+	}
+
+	// Attach the user's name to the comment
+	comment.User = user // Preload the user data
+	return &comment, nil
 }
 
 // EditComment edits a comment's content
@@ -92,4 +104,10 @@ func (s *PostService) EditComment(postID, commentID uint, content string) (*mode
 // DeleteComment deletes a comment
 func (s *PostService) DeleteComment(postID, commentID uint) error {
 	return s.DB.Where("id = ? AND post_id = ?", commentID, postID).Delete(&models.Comment{}).Error
+}
+
+func (s *PostService) GetUserByID(userID uint) (*models.User, error) {
+	var user models.User
+	err := s.DB.First(&user, userID).Error
+	return &user, err
 }

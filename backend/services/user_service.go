@@ -53,7 +53,7 @@ func (s *UserService) SaveSessionID(userID uint, sessionID string) error {
 
 // DeleteSessionID removes the session ID from the user with the given sessionID
 func (s *UserService) DeleteSessionID(sessionID string) error {
-    return s.DB.Model(&models.User{}).Where("session_id = ?", sessionID).Update("session_id", "").Error
+	return s.DB.Model(&models.User{}).Where("session_id = ?", sessionID).Update("session_id", "").Error
 }
 
 // GetAllUsers returns all users from the database
@@ -61,4 +61,10 @@ func (s *UserService) GetAllUsers() ([]models.User, error) {
 	var users []models.User
 	err := s.DB.Find(&users).Error
 	return users, err
+}
+
+func (s *UserService) GetUserByID(id uint) (*models.User, error) {
+	var user models.User
+	err := s.DB.First(&user, id).Error
+	return &user, err
 }

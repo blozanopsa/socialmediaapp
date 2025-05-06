@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,13 +13,12 @@ import (
 	"os"
 	"strconv"
 	"time"
-	"crypto/hmac"
-	"crypto/sha1"
-	"encoding/hex"
 
 	"backend/configs"
 	"backend/services"
 	"backend/utils"
+
+	"github.com/gorilla/mux"
 )
 
 type UserController struct {
@@ -358,4 +360,21 @@ func (uc *UserController) ImageKitAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+// GetUserNameByID returns the user's name for a given user ID
+func (uc *UserController) GetUserNameByID(w http.ResponseWriter, r *http.Request) {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+	user, err := uc.UserService.GetUserByID(uint(id))
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"name": user.Name})
 }

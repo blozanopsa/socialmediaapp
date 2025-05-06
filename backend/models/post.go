@@ -18,6 +18,7 @@ type Comment struct {
 	ID        uint `gorm:"primaryKey"`
 	PostID    uint
 	UserID    uint
+	User      User `gorm:"foreignKey:UserID"`
 	Content   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
