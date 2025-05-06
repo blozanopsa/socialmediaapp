@@ -16,6 +16,16 @@
       <span class="text-xs text-gray-400 ml-auto">{{ formatDate(post.CreatedAt) }}</span>
     </div>
     <div class="text-xl text-gray-800 font-medium">{{ post.Description }}</div>
+    <div v-if="post.ImageURL" class="my-2">
+      <img
+        :src="
+          post.ImageURL.startsWith('/') ? post.ImageURL : 'http://localhost:8080/' + post.ImageURL
+        "
+        alt="Post image"
+        class="max-h-80 rounded-lg border border-gray-200 object-contain mx-auto"
+        style="max-width: 100%"
+      />
+    </div>
     <div class="flex items-center gap-6 mt-2">
       <div class="flex items-center gap-2">
         <button

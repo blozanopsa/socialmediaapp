@@ -49,13 +49,12 @@ func main() {
 	userService := backendServices.NewUserService(db)
 	postController := backendControllers.NewPostController(postService)
 	userController := backendControllers.NewUserController(userService)
-	chatController := backendControllers.NewChatController(db)
 
 	r := router.NewRouter(postController, userController)
 
-	// Public chat endpoints
-	r.HandleFunc("/public-chat-messages", chatController.GetMessages).Methods("GET")
-	r.HandleFunc("/public-chat-messages", chatController.PostMessage).Methods("POST")
+	// Serve static files from /public/images at /images/
+	fs := http.FileServer(http.Dir("./public/images"))
+	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", fs)).Methods("GET")
 
 	// Health check
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

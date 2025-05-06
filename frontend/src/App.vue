@@ -2,7 +2,6 @@
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import Loader from './components/Loader.vue'
 import Navbar from './components/Navbar.vue'
-import PublicChat from './components/PublicChat.vue'
 import { useModalStore } from './stores/modal'
 
 const route = useRoute()
@@ -17,17 +16,6 @@ const modalStore = useModalStore()
     >
       <Navbar v-if="route.name && route.name !== 'home' && route.name !== 'auth-callback'" />
 
-      <PublicChat
-        v-if="
-          route.name &&
-          route.name !== 'auth-callback' &&
-          route.name !== 'home' &&
-          (route.name === 'home' ||
-            route.name === 'likes' ||
-            route.name === 'postfeed' ||
-            route.name === 'profile')
-        "
-      />
       <div v-if="route.name !== 'auth-callback'" class="pt-24">
         <RouterView />
       </div>

@@ -1,13 +1,13 @@
 package controllers
 
 import (
+	"backend/models"
+	"backend/services"
+	"backend/utils"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
-
-	"backend/models"
-	"backend/services"
 
 	"github.com/gorilla/mux"
 )
@@ -21,10 +21,49 @@ func NewPostController(service *services.PostService) *PostController {
 }
 
 func (c *PostController) CreatePost(w http.ResponseWriter, r *http.Request) {
+	// Support both JSON and multipart form
+	contentType := r.Header.Get("Content-Type")
 	var post models.Post
-	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if contentType != "" && (contentType == "application/json" || contentType[:16] == "application/json") {
+		// Fallback for old clients
+		if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		// Parse multipart form
+		if err := r.ParseMultipartForm(10 << 20); err != nil { // 10MB max
+			http.Error(w, "Could not parse multipart form", http.StatusBadRequest)
+			return
+		}
+		post.Description = r.FormValue("description")
+		userIDStr := r.FormValue("userId")
+		if userIDStr == "" {
+			http.Error(w, "Missing userId", http.StatusBadRequest)
+			return
+		}
+		userID, err := strconv.Atoi(userIDStr)
+		if err != nil {
+			http.Error(w, "Invalid userId", http.StatusBadRequest)
+			return
+		}
+		post.UserID = uint(userID)
+
+		// Handle image file if present
+		file, header, err := r.FormFile("image")
+		if err == nil && file != nil && header != nil {
+			log.Printf("[CreatePost] Received image: %s, size: %d bytes", header.Filename, header.Size)
+			relPath, err := utils.SaveUploadedFile(file, header, "./public")
+			if err != nil {
+				log.Printf("[CreatePost] Failed to save image: %v", err)
+				http.Error(w, "Failed to save image", http.StatusInternalServerError)
+				return
+			}
+			log.Printf("[CreatePost] Image saved to: %s", relPath)
+			post.ImageURL = relPath
+		} else {
+			log.Printf("[CreatePost] No image uploaded or error: %v", err)
+		}
 	}
 	if err := c.Service.CreatePost(&post); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -131,7 +170,9 @@ func (c *PostController) LikePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid post ID", http.StatusBadRequest)
 		return
 	}
-	var body struct{ UserID uint `json:"userId"` }
+	var body struct {
+		UserID uint `json:"userId"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.UserID == 0 {
 		http.Error(w, "Missing userId", http.StatusBadRequest)
 		return
@@ -151,7 +192,9 @@ func (c *PostController) UnlikePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid post ID", http.StatusBadRequest)
 		return
 	}
-	var body struct{ UserID uint `json:"userId"` }
+	var body struct {
+		UserID uint `json:"userId"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.UserID == 0 {
 		http.Error(w, "Missing userId", http.StatusBadRequest)
 		return
@@ -174,7 +217,7 @@ func (c *PostController) AddComment(w http.ResponseWriter, r *http.Request) {
 	}
 	var body struct {
 		Content string `json:"content"`
-		UserID uint   `json:"userId"`
+		UserID  uint   `json:"userId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.UserID == 0 || body.Content == "" {
 		http.Error(w, "Missing userId or content", http.StatusBadRequest)

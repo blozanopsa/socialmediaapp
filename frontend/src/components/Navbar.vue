@@ -3,11 +3,20 @@
     class="w-full flex items-center justify-between px-8 py-4 bg-white shadow-md fixed top-0 left-0 z-50"
   >
     <div class="text-4xl text-blue-600 select-none">Social Media App</div>
-    <div class="flex-1 flex justify-center">
-      <nav class="flex gap-4">
-        <RouterLink to="/postfeed" class="nav-btn" active-class="nav-btn-active">Home</RouterLink>
-        <RouterLink to="/likes" class="nav-btn" active-class="nav-btn-active">Likes</RouterLink>
-        <RouterLink to="/profile" class="nav-btn" active-class="nav-btn-active">Profile</RouterLink>
+    <div class="flex mr-auto ml-10 justify-center">
+      <nav class="flex gap-2">
+        <RouterLink
+          to="/postfeed"
+          class="group flex items-center px-3 py-2 text-blue-600 rounded-xl transition-all duration-150 gap-2 focus:outline-none"
+          :class="{
+            'bg-blue-600 text-white shadow hover:bg-blue-500/60 font-semibold':
+              $route.path === '/postfeed',
+            ' hover:bg-blue-300/60': $route.path !== '/postfeed',
+            '': '',
+          }"
+        >
+          <span>Home</span>
+        </RouterLink>
       </nav>
     </div>
     <div class="flex flex-row items-center gap-4">
@@ -64,34 +73,4 @@ async function logout() {
 }
 </script>
 
-<style scoped>
-.nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-width: 1px;
-  border-radius: 0.375rem;
-  padding: 0.5rem 1.25rem;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  background: #fff;
-  color: #2563eb;
-  border-color: #2563eb;
-  transition:
-    background 0.2s,
-    color 0.2s,
-    border 0.2s;
-  text-decoration: none;
-}
-.nav-btn:hover {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
-}
-.nav-btn-active {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
-}
-</style>
+<style scoped></style>

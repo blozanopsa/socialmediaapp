@@ -1,7 +1,7 @@
 <template>
   <div>
     <PostCard
-      v-for="post in posts"
+      v-for="post in posts.slice().reverse()"
       :key="post.ID"
       :post="post"
       :liked-by-user="!!likedByUserMap[String(post.ID)]"

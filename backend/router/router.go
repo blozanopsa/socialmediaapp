@@ -22,9 +22,6 @@ func NewRouter(postController *backendControllers.PostController, userController
 	// Register the `/auth/session/logout` endpoint for clearing sessionID
 	r.HandleFunc("/auth/session/logout", userController.Logout).Methods("POST")
 
-	// User names endpoint for chat bubbles
-	r.HandleFunc("/users/names", userController.GetUserNames).Methods("GET")
-
 	// Post endpoints (protected, add real auth middleware later)
 	api := r.PathPrefix("/api").Subrouter()
 	api.Use(backendMiddleware.AuthMiddleware)

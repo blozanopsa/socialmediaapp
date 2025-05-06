@@ -17,29 +17,29 @@ function handleFacebookLogin() {
 
 <template>
   <div class="flex flex-col items-center justify-center min-h-[80vh]">
-    <div class="text-[3rem] opacity-0 animate-fadeinup mb-8 text-center">
-      Welcome to Social Media App
-    </div>
-    <div class="flex flex-row gap-5 items-center justify-center text-[1.5rem]">
-      <button @click="handleMicrosoftLogin" class="login-btn microsoft-btn animate-fadeinup">
-        <img
-          src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg"
-          alt="Microsoft Logo"
-          class="w-6 h-6"
-        />
-        Sign in with Microsoft
-      </button>
-      <button @click="handleFacebookLogin" class="login-btn facebook-btn animate-fadeinup">
-        <img src="@/assets/facebook_logo.png" alt="Facebook Logo" class="w-6 h-6" />
-        Sign in with Facebook
-      </button>
-    </div>
-    <div
-      v-if="loading"
-      class="fixed inset-0 z-50 flex items-center justify-center"
-      style="background: rgba(100, 116, 139, 0.5)"
-    >
-      <Loader />
+    <div class="px-12 py-12 bg-white shadow-md rounded-lg max-w-4xl w-full">
+      <div class="text-[3rem] mb-8 text-center">Welcome to Social Media App</div>
+      <div class="flex flex-row gap-5 items-center justify-center text-[1.5rem]">
+        <button @click="handleMicrosoftLogin" class="login-btn microsoft-btn">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg"
+            alt="Microsoft Logo"
+            class="w-6 h-6"
+          />
+          Sign in with Microsoft
+        </button>
+        <button @click="handleFacebookLogin" class="login-btn facebook-btn">
+          <img src="@/assets/facebook_logo.png" alt="Facebook Logo" class="w-6 h-6" />
+          Sign in with Facebook
+        </button>
+      </div>
+      <div
+        v-if="loading"
+        class="fixed inset-0 z-50 flex items-center justify-center"
+        style="background: rgba(100, 116, 139, 0.5)"
+      >
+        <Loader />
+      </div>
     </div>
   </div>
 </template>
@@ -78,18 +78,5 @@ function handleFacebookLogin() {
   background: #145db2;
   color: #fff;
   border-color: #145db2;
-}
-@keyframes fadeinup {
-  0% {
-    opacity: 0;
-    transform: translateY(2rem);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-fadeinup {
-  animation: fadeinup 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 </style>

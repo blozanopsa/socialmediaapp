@@ -48,21 +48,43 @@
           placeholder="What's on your mind?"
           class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
-        <IKContext
-          publicKey="public_GwIFTTS26dR3QXyxCoO+pKBdTXU="
-          urlEndpoint="https://ik.imagekit.io/ph47nw0omb"
-          :authenticator="authenticator"
+        <label
+          class="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 transition text-blue-700 font-medium"
         >
-          <IKUpload
-            :onSuccess="onSuccess"
-            :onError="onError"
-            :useUniqueFileName="true"
-            :isPrivateFile="false"
-            :showProgress="true"
-            :validateFile="(file) => file.size < 5 * 1024 * 1024"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
+            />
+          </svg>
+          <span>Upload Image</span>
+          <input
+            type="file"
+            accept="image/*"
+            @change="onImageChange"
+            class="hidden"
+            aria-label="Upload image"
           />
-        </IKContext>
-        <div v-if="imageUrl" class="text-green-600 text-xs">Image uploaded!</div>
+        </label>
+        <!-- Image Preview -->
+        <div v-if="imagePreview" class="mt-2">
+          <img :src="imagePreview" alt="Image preview" class="max-h-32 rounded border" />
+          <button
+            type="button"
+            @click="removeImage"
+            class="block mt-1 text-xs text-red-600 hover:underline"
+          >
+            Remove
+          </button>
+        </div>
         <div class="flex gap-2 justify-end">
           <button
             type="button"
@@ -81,208 +103,32 @@
         </div>
       </form>
     </BaseModal>
-    <BaseModal :show="showCommentModal" @close="showCommentModal = false">
-      <div v-if="selectedPost" class="w-[1000px] min-h-[400px] max-w-full">
-        <!-- Post content and like button at the top -->
-        <div class="mb-4 pb-4 border-b border-gray-200">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-blue-700 text-lg">{{ selectedPost.User?.Name || 'Unknown' }}</span>
-            <span class="text-xs text-gray-400 ml-auto">{{
-              new Date(selectedPost.CreatedAt).toLocaleString()
-            }}</span>
-            <button
-              v-if="canEditPost(selectedPost) && !editingPost"
-              @click="startEditPost"
-              class="ml-2 px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
-            >
-              Edit
-            </button>
-          </div>
-          <div v-if="editingPost" class="flex flex-col gap-2">
-            <textarea
-              v-model="editPostContent"
-              rows="3"
-              class="border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-            ></textarea>
-            <div class="flex gap-2">
-              <button
-                @click="cancelEditPost"
-                class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                @click="saveEditPost"
-                class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-          <div v-else class="text-xl text-gray-800 font-medium mb-2">
-            {{ selectedPost.Description }}
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              @click="
-                (e) => {
-                  if (selectedPost.User?.ID === userStore.user?.id) return
-                  handleLike(selectedPost)
-                  e.stopPropagation()
-                }
-              "
-              :aria-label="likedByUserMap[String(selectedPost.ID)] ? 'Unlike' : 'Like'"
-              class="relative group"
-            >
-              <svg
-                v-if="
-                  likedByUserMap[String(selectedPost.ID)] &&
-                  selectedPost.User?.ID !== userStore.user?.id
-                "
-                xmlns="http://www.w3.org/2000/svg"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                class="w-7 h-7 text-red-500 transition-transform duration-200 scale-110"
-              >
-                <path
-                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                />
-              </svg>
-              <svg
-                v-else
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                class="w-7 h-7 text-gray-400 group-hover:text-red-400 transition-colors"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                />
-              </svg>
-            </button>
-            <span class="text-base text-gray-700 min-w-[2ch] text-center">{{
-              selectedPost.likesCount || (selectedPost.Likes ? selectedPost.Likes.length : 0)
-            }}</span>
-          </div>
-        </div>
-        <!-- Comments section -->
-        <h2 class="text-lg mb-2">Comments</h2>
-        <div v-if="loadingComments" class="py-4 flex justify-center"><Loader /></div>
-        <div v-else class="max-h-64 overflow-y-auto space-y-2 mb-4">
-          <div
-            v-for="comment in comments"
-            :key="comment.ID"
-            class="bg-gray-100 rounded-lg px-3 py-2 text-sm flex items-center justify-between"
-          >
-            <div class="flex-1">
-              <span class="text-blue-700">{{
-                userNames[comment.UserID] || 'User ' + comment.UserID
-              }}</span>
-              <span class="text-xs text-gray-400 ml-2">{{
-                new Date(comment.CreatedAt).toLocaleString()
-              }}</span>
-              <div v-if="editingCommentId === comment.ID">
-                <textarea
-                  v-model="editCommentContent"
-                  rows="2"
-                  class="border border-gray-300 rounded-lg px-2 py-1 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none mt-1"
-                ></textarea>
-                <div class="flex gap-2 mt-1">
-                  <button
-                    @click="cancelEditComment"
-                    class="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-xs"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    @click="saveEditComment(comment)"
-                    class="px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-              <div v-else>{{ comment.Content }}</div>
-            </div>
-            <div v-if="canEditOrDeleteComment(comment)" class="relative ml-2">
-              <button
-                @click="(e) => toggleCommentMenu(comment.ID, e)"
-                class="p-1 rounded hover:bg-gray-200"
-              >
-                <!-- Burger icon -->
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 8h16M4 16h16"
-                  />
-                </svg>
-              </button>
-              <teleport to="body">
-                <div
-                  v-if="openCommentMenuId === comment.ID"
-                  class="comment-menu-tooltip fixed w-24 bg-white border rounded shadow z-[99999] flex flex-col"
-                  :style="{ top: menuPosition.top + 'px', left: menuPosition.left + 'px' }"
-                  @click.stop
-                >
-                  <button
-                    @click="
-                      () => {
-                        startEditComment(comment)
-                        openCommentMenuId = null
-                      }
-                    "
-                    class="px-3 py-2 text-left text-blue-600 hover:bg-blue-50"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    @click="
-                      () => {
-                        deleteComment(comment)
-                        openCommentMenuId = null
-                      }
-                    "
-                    class="px-3 py-2 text-left text-red-600 hover:bg-red-50"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </teleport>
-            </div>
-          </div>
-          <div v-if="comments.length === 0" class="text-gray-400 text-center">No comments yet.</div>
-        </div>
-        <form @submit.prevent="addComment" class="flex gap-2">
-          <input
-            v-model="commentInput"
-            type="text"
-            placeholder="Add a comment..."
-            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            type="submit"
-            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"
-          >
-            Post
-          </button>
-        </form>
-      </div>
-      <div v-else class="flex items-center justify-center min-h-[400px]">
-        <Loader />
-      </div>
-    </BaseModal>
+    <PostModal
+      :show="showCommentModal"
+      :selected-post="selectedPost"
+      :comments="comments"
+      :loading-comments="loadingComments"
+      :user-names="userNames"
+      :editing-post="editingPost"
+      :edit-post-content="editPostContent"
+      :editing-comment-id="editingCommentId"
+      :edit-comment-content="editCommentContent"
+      :open-comment-menu-id="openCommentMenuId"
+      :menu-position="menuPosition"
+      :liked-by-user-map="likedByUserMap"
+      @close="showCommentModal = false"
+      @like="handleLike"
+      @add-comment="addComment"
+      @cancel-edit-post="cancelEditPost"
+      @save-edit-post="saveEditPost"
+      @start-edit-post="startEditPost"
+      @edit-comment="editComment"
+      @cancel-edit-comment="cancelEditComment"
+      @save-edit-comment="saveEditComment"
+      @start-edit-comment="startEditComment"
+      @delete-comment="deleteComment"
+      @toggle-comment-menu="toggleCommentMenu"
+    />
   </div>
 </template>
 <script setup>
@@ -290,6 +136,7 @@ import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import Loader from '@/components/Loader.vue'
 import PostList from '@/components/PostList.vue'
 import BaseModal from '@/components/modals/BaseModal.vue'
+import PostModal from '@/components/modals/PostModal.vue'
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import { useModalStore } from '@/stores/modal'
@@ -314,16 +161,12 @@ const editPostContent = ref('')
 const editingCommentId = ref(null)
 const editCommentContent = ref('')
 const imageFile = ref(null)
+const imagePreview = ref(null)
 
 // Watch for modal open/close and update global modal state
 watch([showModal, showCommentModal], ([modal, commentModal]) => {
   modalStore.isAnyModalOpen = modal || commentModal
 })
-
-async function fetchUserNames() {
-  const res = await axios.get('http://localhost:8080/users/names', { withCredentials: true })
-  userNames.value = Object.fromEntries(res.data.map((u) => [u.id, u.name]))
-}
 
 function toggleCommentMenu(id, event) {
   if (openCommentMenuId.value === id) {
@@ -355,7 +198,6 @@ function handleClickOutsideMenu(e) {
 onMounted(() => {
   fetchPosts()
   fetchLikes()
-  fetchUserNames()
   document.addEventListener('mousedown', handleClickOutsideMenu)
   window.addEventListener('scroll', () => {
     openCommentMenuId.value = null
@@ -427,43 +269,36 @@ async function handleDelete(post) {
   fetchPosts()
 }
 
-async function uploadImage() {
-  if (!imageFile.value) return ''
-  const formData = new FormData()
-  formData.append('file', imageFile.value)
-  const res = await fetch('https://uploadthing.com/api/upload', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${import.meta.env.VITE_UPLOADTHING_TOKEN}`,
-    },
-    body: formData,
-  })
-  const data = await res.json()
-  return data.url
-}
-
 async function handleNewPost() {
-  let url = ''
+  const formData = new FormData()
+  formData.append('description', newPostContent.value)
+  formData.append('userId', userStore.user?.id)
   if (imageFile.value) {
-    url = await uploadImage()
+    formData.append('image', imageFile.value)
   }
-  await axios.post(
-    'http://localhost:8080/api/posts',
-    {
-      description: newPostContent.value,
-      userId: userStore.user?.id,
-      image_url: url,
-    },
-    { withCredentials: true },
-  )
+  await axios.post('http://localhost:8080/api/posts', formData, {
+    withCredentials: true,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
   newPostContent.value = ''
   imageFile.value = null
+  imagePreview.value = null
   showModal.value = false
   fetchPosts()
 }
 
 function onImageChange(e) {
   imageFile.value = e.target.files[0]
+  if (imageFile.value) {
+    imagePreview.value = URL.createObjectURL(imageFile.value)
+  } else {
+    imagePreview.value = null
+  }
+}
+
+function removeImage() {
+  imageFile.value = null
+  imagePreview.value = null
 }
 
 function openCommentModal(post) {
@@ -485,17 +320,17 @@ async function fetchComments(postId) {
   }
 }
 
-async function addComment() {
-  if (!commentInput.value.trim() || !selectedPost.value) return
+async function addComment(commentContent) {
+  // Accept commentContent from PostModal emit
+  if (!commentContent || !commentContent.trim() || !selectedPost.value) return
   await axios.post(
     `http://localhost:8080/api/posts/${selectedPost.value.ID}/comments`,
     {
-      content: commentInput.value,
+      content: commentContent,
       userId: JSON.parse(localStorage.getItem('user'))?.id,
     },
     { withCredentials: true },
   )
-  commentInput.value = ''
   fetchComments(selectedPost.value.ID)
 }
 
@@ -512,14 +347,52 @@ function canEditOrDeleteComment(comment) {
   return user && user.id === comment.UserID
 }
 
-async function editComment(comment) {
-  const newContent = prompt('Edit your comment:', comment.Content)
-  if (newContent && newContent.trim() && newContent !== comment.Content) {
-    await axios.put(
+// Handles editing a comment (edit-in-place, robust, from scratch, with logging)
+async function editComment({ comment, content }) {
+  console.log('[editComment] called with:', {
+    comment,
+    content,
+    editCommentContent: editCommentContent.value,
+  })
+  // Use the content from the event, or fallback to editCommentContent
+  let newContent = content !== undefined ? content : editCommentContent.value
+  console.log('[editComment] newContent before trim:', newContent)
+  // Defensive: trim and check
+  if (!newContent || !newContent.trim() || newContent === comment.Content) {
+    console.warn('[editComment] Invalid or unchanged content, aborting.', { newContent, comment })
+    editingCommentId.value = null
+    editCommentContent.value = ''
+    return
+  }
+  newContent = newContent.trim()
+  console.log('[editComment] newContent after trim:', newContent)
+  try {
+    // Call the API to update the comment
+    console.log(
+      '[editComment] Sending PUT to API:',
+      `http://localhost:8080/api/posts/${selectedPost.value.ID}/comments/${comment.ID}`,
+      { content: newContent },
+    )
+    const response = await axios.put(
       `http://localhost:8080/api/posts/${selectedPost.value.ID}/comments/${comment.ID}`,
       { content: newContent },
       { withCredentials: true },
     )
+    console.log('[editComment] API response:', response)
+    // Optionally update the comment in the local array for instant UI feedback
+    const idx = comments.value.findIndex((c) => c.ID === comment.ID)
+    if (idx !== -1) {
+      comments.value[idx].Content = newContent
+      console.log('[editComment] Updated local comment:', comments.value[idx])
+    }
+  } catch (e) {
+    // Optionally show error to user
+    console.error('[editComment] Failed to edit comment', e)
+  } finally {
+    editingCommentId.value = null
+    editCommentContent.value = ''
+    // Optionally re-fetch comments for consistency
+    console.log('[editComment] Fetching comments for post', selectedPost.value.ID)
     fetchComments(selectedPost.value.ID)
   }
 }

@@ -15,7 +15,6 @@ func Migrate(db *gorm.DB) {
 		&models.Post{},
 		&models.Comment{},
 		&models.Like{},
-		&models.ChatMessage{},
 	)
 	if err != nil {
 		log.Fatalf("Migration failed: %v", err)
