@@ -25,12 +25,34 @@
           </button>
         </div>
         <div v-if="posts.length > 0" class="w-full max-w-xl mb-8">
+          <div class="flex justify-end gap-2 mb-4">
+            <button
+              @click="sortOrder = 'newest'"
+              :class="{
+                'bg-blue-600 text-white': sortOrder === 'newest',
+                'bg-gray-200 hover:bg-gray-300': sortOrder !== 'newest',
+              }"
+              class="px-3 py-1 rounded-lg text-sm transition-colors"
+            >
+              Sort by Newest
+            </button>
+            <button
+              @click="sortOrder = 'oldest'"
+              :class="{
+                'bg-blue-600 text-white': sortOrder === 'oldest',
+                'bg-gray-200 hover:bg-gray-300': sortOrder !== 'oldest',
+              }"
+              class="px-3 py-1 rounded-lg text-sm transition-colors"
+            >
+              Sort by Oldest
+            </button>
+          </div>
           <div v-if="loading" class="flex justify-center py-8">
             <Loader />
           </div>
           <PostList
             v-else
-            :posts="posts"
+            :posts="sortedPosts"
             :liked-by-user-map="likedByUserMap"
             @like="handleLike"
             @delete="handleDelete"
@@ -108,9 +130,8 @@
       :selected-post="selectedPost"
       :comments="comments"
       :loading-comments="loadingComments"
-      :user-names="userNames"
       :editing-post="editingPost"
-      :edit-post-content="editPostContent"
+      v-model:editPostContent="editPostContent"
       :editing-comment-id="editingCommentId"
       :edit-comment-content="editCommentContent"
       :open-comment-menu-id="openCommentMenuId"
@@ -132,7 +153,7 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, watch, computed } from 'vue' // Added computed
 import Loader from '@/components/Loader.vue'
 import PostList from '@/components/PostList.vue'
 import BaseModal from '@/components/modals/BaseModal.vue'
@@ -155,17 +176,25 @@ const comments = ref([])
 const loadingComments = ref(false)
 const openCommentMenuId = ref(null)
 const menuPosition = ref({ top: 0, left: 0 })
-const userNames = ref({})
 const editingPost = ref(false)
 const editPostContent = ref('')
 const editingCommentId = ref(null)
 const editCommentContent = ref('')
 const imageFile = ref(null)
 const imagePreview = ref(null)
+const sortOrder = ref('newest') // Default sort order
 
 // Watch for modal open/close and update global modal state
 watch([showModal, showCommentModal], ([modal, commentModal]) => {
   modalStore.isAnyModalOpen = modal || commentModal
+})
+
+const sortedPosts = computed(() => {
+  return [...posts.value].sort((a, b) => {
+    const dateA = new Date(a.CreatedAt).getTime()
+    const dateB = new Date(b.CreatedAt).getTime()
+    return sortOrder.value === 'newest' ? dateB - dateA : dateA - dateB
+  })
 })
 
 function toggleCommentMenu(id, event) {
@@ -314,24 +343,49 @@ async function fetchComments(postId) {
     const res = await axios.get(`http://localhost:8080/api/posts/${postId}`, {
       withCredentials: true,
     })
+    // Comments from API now include UserName directly
     comments.value = res.data.Comments || []
+  } catch (error) {
+    console.error('Failed to fetch comments:', error)
+    comments.value = []
   } finally {
     loadingComments.value = false
   }
 }
 
 async function addComment(commentContent) {
-  // Accept commentContent from PostModal emit
   if (!commentContent || !commentContent.trim() || !selectedPost.value) return
-  await axios.post(
-    `http://localhost:8080/api/posts/${selectedPost.value.ID}/comments`,
-    {
-      content: commentContent,
-      userId: JSON.parse(localStorage.getItem('user'))?.id,
-    },
-    { withCredentials: true },
-  )
-  fetchComments(selectedPost.value.ID)
+
+  if (!userStore.user?.id) {
+    console.error('User not logged in, cannot comment.')
+    return
+  }
+
+  try {
+    const response = await axios.post(
+      // Capture the response
+      `http://localhost:8080/api/posts/${selectedPost.value.ID}/comments`,
+      {
+        content: commentContent,
+        userId: userStore.user.id,
+      },
+      { withCredentials: true },
+    )
+
+    const newComment = response.data // The new comment from the API
+
+    // Append the new comment to the existing list
+    if (!Array.isArray(comments.value)) {
+      comments.value = []
+    }
+    comments.value.push(newComment) // Add to the end. PostModal will reverse for display.
+
+    // No longer re-fetching all comments:
+    // await fetchComments(selectedPost.value.ID)
+  } catch (error) {
+    console.error('Failed to add comment:', error)
+    // Optionally, inform the user that adding the comment failed.
+  }
 }
 
 async function deleteComment(comment) {

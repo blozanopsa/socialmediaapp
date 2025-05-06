@@ -18,7 +18,8 @@ type Comment struct {
 	ID        uint `gorm:"primaryKey"`
 	PostID    uint
 	UserID    uint
-	User      User `gorm:"foreignKey:UserID"`
+	User      User   `gorm:"foreignKey:UserID"` // Keep this for GORM relations & potential full user data
+	UserName  string `gorm:"-"`                 // Add this field for direct name access, ignored by GORM for DB schema
 	Content   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
